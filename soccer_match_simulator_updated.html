@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Soccer Match Simulator — Updated Edition</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1118;--panel:#141e29;--panel2:#192634;--line:#2a3b4c;--muted:#9aabba;--text:#edf4fb;--accent:#79e2a2;--accent2:#45b778;--gold:#ffce6b}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 50% -25%,#243b4b 0%,var(--bg) 60%);color:var(--text);font:15px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;min-height:100vh}
+button,select,input{font:inherit}
+button,select{border:1px solid #3a4e61;background:#202e3d;color:var(--text);border-radius:10px;padding:10px 13px}
+select{max-width:100%;cursor:pointer}
+button{cursor:pointer;font-weight:750;transition:transform .15s ease,border-color .15s ease,background .15s ease}
+button:hover{background:#2a3b4b;border-color:#6c8295;transform:translateY(-1px)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);border-color:var(--accent);color:#092015}
+button.primary:hover{background:#9bf0ba;border-color:#9bf0ba}
+button.secondary{background:#243648}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.app-shell{max-width:1320px;margin:0 auto;padding:24px clamp(12px,2.5vw,30px) 38px}
+.app-header{text-align:center;margin:0 auto 22px;max-width:800px}
+.eyebrow{color:var(--accent);font-size:11px;font-weight:850;letter-spacing:.22em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:clamp(27px,4vw,42px);line-height:1.08;letter-spacing:-.04em;margin:0 0 10px;font-weight:900}
+.app-header p{color:var(--muted);margin:0;font-size:14px}
+.panel{background:linear-gradient(145deg,rgba(25,38,51,.97),rgba(17,27,38,.98));border:1px solid var(--line);border-radius:17px;box-shadow:0 16px 40px rgba(0,0,0,.16);padding:16px;margin-top:15px}
+.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px}
+.section-heading h2,.panel h2{font-size:15px;letter-spacing:.01em;margin:0;font-weight:850}
+.section-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:800}
+.match-control-panel{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end}
+.match-pickers{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:10px}
+.team-picker{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:850;min-width:0}
+.team-picker select{width:100%;font-size:14px;text-transform:none;letter-spacing:normal;font-weight:700;color:var(--text)}
+.vs-mark{color:#6d8192;font-size:12px;font-weight:900;padding-bottom:13px}
+.match-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.scoreboard{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:20px;align-items:center;padding:21px 16px;margin-top:15px;border-radius:18px;background:linear-gradient(120deg,#172633,#1d2c38 50%,#172633);border:1px solid #344756;box-shadow:inset 0 1px rgba(255,255,255,.035)}
+.score-team{min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+.score-team .team-name{font-size:clamp(14px,2vw,20px);font-weight:850;letter-spacing:-.02em;overflow-wrap:anywhere}
+.kit-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px;box-shadow:0 0 0 3px rgba(255,255,255,.06)}
+.score-numbers{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:120px}
+.score{font-size:clamp(37px,6vw,58px);font-weight:950;letter-spacing:-.065em;line-height:1;font-variant-numeric:tabular-nums}
+.score-caption{font-size:10px;color:var(--muted);letter-spacing:.2em;font-weight:900}
+.match-meta{display:flex;justify-content:center;align-items:center;gap:12px;margin:12px 0 10px}
+.timer{font-size:20px;line-height:1;font-weight:900;letter-spacing:.08em;font-variant-numeric:tabular-nums}
+.status-pill{display:inline-flex;align-items:center;gap:7px;border:1px solid #405363;border-radius:999px;padding:5px 10px;font-size:10px;letter-spacing:.13em;font-weight:900;color:#a7b7c5;background:#1b2936}
+.status-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.status-pill.live{color:var(--accent);border-color:#38664d}.status-pill.finished{color:var(--gold);border-color:#685937}
+.game-area{background:#111a24;border:1px solid #2b3d4c;border-radius:18px;padding:10px;box-shadow:0 18px 45px rgba(0,0,0,.25)}
+canvas{display:block;width:100%;height:auto;aspect-ratio:1000/620;border:1px solid rgba(255,255,255,.15);border-radius:11px;background:#28753e;box-shadow:0 5px 15px rgba(0,0,0,.16)}
+.pitch-footer{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 3px 0;color:var(--muted);font-size:11px}
+.legend{display:flex;gap:13px;align-items:center;flex-wrap:wrap}.legend-item{display:inline-flex;align-items:center;gap:6px}.legend-swatch{width:9px;height:9px;border:1px solid rgba(255,255,255,.7);border-radius:50%;display:inline-block}
+.panel-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.panel-heading h2{font-size:15px;margin:0}
+.panel-heading .helper{color:var(--muted);font-size:11px}
+.settings-panel details{padding:0}
+.settings-panel summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px;font-weight:850}
+.settings-panel summary::-webkit-details-marker{display:none}
+.settings-panel summary::after{content:"＋";color:var(--accent);font-size:18px}
+.settings-panel details[open] summary::after{content:"−"}
+.settings-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:17px}
+.setting-control{display:flex;flex-direction:column;gap:7px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:850;min-width:0}
+.setting-control select{width:100%;font-size:13px;text-transform:none;letter-spacing:normal;font-weight:650}
+.setting-toggle{display:flex;align-items:center;gap:8px;border:1px solid #2e4050;background:#172431;padding:10px 11px;border-radius:10px;color:#d7e1e9;font-size:12px;font-weight:700;letter-spacing:0;text-transform:none;min-height:42px}
+.setting-toggle input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+#commentary{max-height:300px;min-height:60px;overflow:auto;display:flex;flex-direction:column;gap:7px;padding-right:3px}
+.event{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border:1px solid #293b4a;border-radius:10px;background:#172431;font-size:13px;line-height:1.35}
+.event-time{flex:0 0 30px;color:#a6bac9;font-weight:900;font-variant-numeric:tabular-nums}
+.event-copy{min-width:0;overflow-wrap:anywhere}.event.goal{border-color:#326548;background:#192f27}.event.goal .event-time{color:#8af0b0}.event.ht{border-color:#63512b;background:#30291b}.event.ft{border-color:#35576e;background:#1a2b3b}.event.sub{border-color:#344d68}.event.injury{border-color:#70473b;background:#30231f}
+.squads{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.squad{border:1px solid #2c3d4b;border-radius:12px;background:#16222e;padding:13px;min-width:0;font-size:12px;line-height:1.7;color:#c8d4de;overflow-wrap:anywhere}
+.squad h3{margin:0;font-size:15px;color:var(--text)}
+.squad-title{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:9px}
+.formation-tag{font-size:10px;color:var(--accent);border:1px solid #2e6045;border-radius:999px;padding:2px 7px;font-weight:900;letter-spacing:.06em;white-space:nowrap}
+.squad strong{display:block;margin:12px 0 4px;color:#e3ebf2;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.squad .starter-list{display:grid;grid-template-columns:1fr;gap:1px}.squad .starter{padding:1px 0}.squad .role{display:inline-block;min-width:38px;padding-right:5px;color:#90a7b8;font-size:10px;font-weight:900}
+.summary-panel{border-color:#3c624d;background:linear-gradient(145deg,#172b24,#14232a)}
+.summary-panel[hidden], [hidden]{display:none!important}
+.summary-top{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding-bottom:13px;border-bottom:1px solid #315344}
+.summary-label{color:var(--accent);font-size:10px;font-weight:950;letter-spacing:.18em;text-transform:uppercase}
+.summary-top h2{font-size:20px;margin:3px 0 0}
+.summary-score{font-size:30px;letter-spacing:-.04em;font-weight:950;font-variant-numeric:tabular-nums}
+.summary-buttons{display:flex;gap:8px;flex-wrap:wrap}
+.stats-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:14px 0}
+.stat-card{background:rgba(8,19,16,.28);border:1px solid #315041;border-radius:11px;padding:11px;text-align:center;min-width:0}
+.stat-value{font-size:21px;font-weight:950;line-height:1.1;font-variant-numeric:tabular-nums}.stat-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#a9bdb4;font-weight:850;margin-top:5px}
+.summary-columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.summary-section{border:1px solid #315041;border-radius:11px;padding:12px;background:rgba(8,19,16,.2);min-width:0}
+.summary-section h3{font-size:12px;margin:0 0 9px;text-transform:uppercase;letter-spacing:.08em}
+.summary-list{margin:0;padding-left:22px;color:#d9e6dd;font-size:13px}.summary-list li{padding:3px 0;overflow-wrap:anywhere}.summary-list .muted{color:#9eb3a7}
+.empty-state{color:#9eb3a7;font-size:12px}
+.footer-note{text-align:center;color:#718596;font-size:11px;margin-top:16px}
+@media(max-width:850px){.match-control-panel{grid-template-columns:1fr}.match-actions{justify-content:flex-start}.settings-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.scoreboard{gap:10px}.score-numbers{min-width:100px}}
+@media(max-width:560px){.app-shell{padding:17px 10px 26px}.panel{padding:12px;border-radius:13px}.match-pickers{grid-template-columns:1fr 24px 1fr;gap:6px}.team-picker select{padding:9px 6px;font-size:12px}.vs-mark{text-align:center}.match-actions button{flex:1;padding:9px 8px;font-size:12px}.scoreboard{padding:17px 8px;gap:3px}.score-team .team-name{font-size:12px}.kit-dot{width:7px;height:7px;margin-right:4px}.score{font-size:39px}.score-numbers{min-width:84px}.timer{font-size:18px}.game-area{padding:5px;border-radius:13px}.pitch-footer{padding:8px 2px 2px}.settings-grid{grid-template-columns:1fr 1fr;gap:8px}.setting-control select{padding:9px 7px;font-size:12px}.setting-toggle{padding:8px;font-size:11px}.squads{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.stat-card:last-child{grid-column:1/-1}.summary-columns{grid-template-columns:1fr}.summary-score{font-size:25px}.summary-buttons{width:100%}.summary-buttons button{flex:1}}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
+</style>
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <div class="eyebrow">Matchday simulation engine</div>
+    <h1>⚽ Soccer Match Simulator</h1>
+    <p>Pick two teams, set your match style, and watch the 90 minutes unfold.</p>
+  </header>
+
+  <section class="panel match-control-panel" aria-label="Match controls">
+    <div class="match-pickers">
+      <label class="team-picker" for="homeSelect">Home team<select id="homeSelect"></select></label>
+      <div class="vs-mark" aria-hidden="true">VS</div>
+      <label class="team-picker" for="awaySelect">Away team<select id="awaySelect"></select></label>
+    </div>
+    <div class="match-actions">
+      <button id="startBtn" class="primary" type="button">▶ Start Match</button>
+      <button id="pauseBtn" class="secondary" type="button">Ⅱ Pause</button>
+      <button id="resetBtn" type="button">↻ Reset</button>
+    </div>
+  </section>
+
+  <section class="scoreboard" aria-label="Live score">
+    <div class="score-team"><div id="homeKit" class="team-name"><span class="kit-dot"></span><span id="homeName">Barcelona</span></div><div class="section-kicker">Home</div></div>
+    <div class="score-numbers"><div id="score" class="score">0 - 0</div><div class="score-caption">SCORE</div></div>
+    <div class="score-team"><div id="awayKit" class="team-name"><span class="kit-dot"></span><span id="awayName">Real Madrid</span></div><div class="section-kicker">Away</div></div>
+  </section>
+  <div class="match-meta"><div id="timer" class="timer">00:00</div><div id="statusPill" class="status-pill">READY</div></div>
+
+  <section class="game-area" aria-label="Animated football pitch">
+    <canvas id="pitch" width="1000" height="620" role="img" aria-label="Animated soccer match pitch with player markers and ball"></canvas>
+    <div class="pitch-footer">
+      <div class="legend"><span class="legend-item"><span id="homeLegend" class="legend-swatch" style="background:#a50044"></span><span id="homeLegendName">Barcelona</span></span><span class="legend-item"><span id="awayLegend" class="legend-swatch" style="background:#183b72"></span><span id="awayLegendName">Real Madrid</span></span></div>
+      <span>Marker text = position · Names can be toggled below</span>
+    </div>
+  </section>
+
+  <section id="matchSummary" class="panel summary-panel" hidden aria-live="polite">
+    <div class="summary-top">
+      <div><div class="summary-label">Full time</div><h2 id="summaryTitle">Match report</h2></div>
+      <div id="summaryScore" class="summary-score">0 – 0</div>
+      <div class="summary-buttons"><button id="playAgainBtn" class="primary" type="button">▶ Play Again</button><button id="newMatchBtn" type="button">New Match</button></div>
+    </div>
+    <div id="summaryStats" class="stats-grid"></div>
+    <div class="summary-columns">
+      <section class="summary-section"><h3>Goal timeline</h3><ol id="summaryGoals" class="summary-list"></ol></section>
+      <section class="summary-section"><h3>Key moments</h3><ol id="summaryEvents" class="summary-list"></ol></section>
+    </div>
+  </section>
+
+  <section class="panel settings-panel">
+    <details id="settingsDetails">
+      <summary><span>Customize your match</span><span class="section-kicker">Pace · scoring · pitch · display</span></summary>
+      <div class="settings-grid">
+        <label class="setting-control" for="matchSpeedSelect">Match speed<select id="matchSpeedSelect"><option value="750">Slow · ~69 sec</option><option value="500" selected>Normal · ~46 sec</option><option value="300">Fast · ~28 sec</option></select></label>
+        <label class="setting-control" for="goalRateSelect">Match style<select id="goalRateSelect"><option value="0.82">Tactical · fewer chances</option><option value="1" selected>Balanced</option><option value="1.22">Open game · more chances</option></select></label>
+        <label class="setting-control" for="pitchStyleSelect">Pitch look<select id="pitchStyleSelect"><option value="classic" selected>Classic green</option><option value="stripes">Bold stripes</option><option value="night">Night match</option></select></label>
+        <label class="setting-toggle"><input id="showLabelsCheckbox" type="checkbox" checked> Show player surnames</label>
+        <label class="setting-toggle"><input id="showCommentaryCheckbox" type="checkbox" checked> Show live commentary</label>
+        <label class="setting-toggle"><input id="showSquadsCheckbox" type="checkbox" checked> Show team squads</label>
+      </div>
+    </details>
+  </section>
+
+  <section id="commentaryPanel" class="panel">
+    <div class="panel-heading"><h2>Live commentary</h2><span class="helper">Newest events appear first</span></div>
+    <div id="commentary" aria-live="polite" aria-relevant="additions"></div>
+  </section>
+
+  <section id="squadsPanel" class="panel">
+    <div class="panel-heading"><h2>Selected squads</h2><span class="helper">Starters and position-matched backups</span></div>
+    <div class="squads"><div id="homeSquad" class="squad"></div><div id="awaySquad" class="squad"></div></div>
+  </section>
+  <div class="footer-note">A self-contained match simulator · No external libraries required</div>
+</div>
+<script>
+"use strict";
+const TEAMS={
+"Barcelona":{attack:1.08,defense:1.05,starters:[["GK","Joan Garcia"],["RB","Jules Kounde"],["RCB","Pau Cubarsi"],["LCB","Gerard Martin"],["LB","Joao Cancelo"],["CM1","Pedri"],["CM2","Rodri"],["CAM","Fermin Lopez"],["LW","Anthony Gordon"],["ST","Raphinha"],["RW","Lamine Yamal"]],bench:["Dominic Livakovic","Wojciech Szczesny","Eric Garcia","Andres Christensen","Xavi Espart","Alejandro Balde","Frenkie De Jong","Gavi","Marc Bernal","Dani Olmo","Karim Adeyemi","Gabriel Jesus","Hamza Abdelkarim","Roony Bardghji"]},
+"Real Madrid":{attack:1.09,defense:1.07,starters:[["GK","Thibaut Courtois"],["RB","Trent Alexander-Arnold"],["RCB","Ibrahima Konate"],["LCB","Dean Huijsen"],["LB","Marc Cucurella"],["CM1","Federico Valverde"],["CM2","Aurélien Tchouaméni"],["CAM","Jude Bellingham"],["LW","Vinicius Junior"],["ST","Kylian Mbappé"],["RW","Yan Diomande"]],bench:["Andriy Lunin","Denzel Dumfries","Raúl Asencio","Éder Militão","Antonio Rüdiger","Álvaro Carreras","Ferland Mendy","Eduardo Camavinga","Jorge Cestero","Thiago Pitarch","Bernardo Silva","Brahim Díaz","Rodrygo","Arda Güler","Endrick","Carlos Espí"]},"Arsenal":{attack:1.06,defense:1.05,starters:[["GK","David Raya"],["RB","Jurriën Timber"],["RCB","William Saliba"],["LCB","Gabriel"],["LB","Riccardo Calafiori"],["CM1","Declan Rice"],["CM2","Bruno Guimarães"],["CAM","Martin Ødegaard"],["LW","Christos Tzolis"],["ST","Viktor Gyökeres"],["RW","Bukayo Saka"]],bench:["Illan Meslier","Kepa Arrizabalaga","Ben White","Ezri Konsa","Cristhian Mosquera","Piero Hincapié","Martín Zubimendi","Myles Lewis-Skelly","Mikel Merino","Eberechi Eze","Kai Havertz","Max Dowman","Noni Madueke"]},
+"Manchester City":{attack:1.08,defense:1.05,starters:[["GK","Gianluigi Donnarumma"],["RB","Matheus Nunes"],["RCB","Rúben Dias"],["LCB","Josko Gvardiol"],["LB","Nico O'Reilly"],["CM1","Elliot Anderson"],["CM2","Enzo Fernández"],["CAM","Rayan Cherki"],["LW","Jérémy Doku"],["ST","Erling Haaland"],["RW","Antoine Semenyo"]],bench:["Gerónimo Rulli","Marcus Bettinelli","Rico Lewis","Marc Guéhi","Abdukodir Khusanov","Vitor Reis","Rayan Aït-Nouri","Ayyoub Bouaddi","Mateo Kovacic","Allan","Iliman Ndiaye","Ryan McAidoo","Phil Foden"]},
+"PSG":{attack:1.07,defense:1.06,starters:[["GK","Matvey Safonov"],["RB","Achraf Hakimi"],["RCB","Marquinhos"],["LCB","Willian Pacho"],["LB","Nuno Mendes"],["CM1","João Neves"],["CM2","Vitinha"],["CAM","Fabián Ruiz"],["LW","Khvicha Kvaratskhelia"],["ST","Ousmane Dembélé"],["RW","Désiré Doué"]],bench:["Lucas Chevalier","Alessandro Longoni","Lucas Hernández","Ilya Zabarnyi","Lucas Beraldo","Lucas Digne","Warren Zaïre-Emery","Senny Mayulu","Dro Fernández","Mika Godts","Quentin Ndjantou","Maghnes Akliouche","Ferran Torres"]},
+"Bayern Munich":{attack:1.06,defense:1.05,starters:[["GK","Manuel Neuer"],["RB","Konrad Laimer"],["RCB","Dayot Upamecano"],["LCB","Jonathan Tah"],["LB","Nathaniel Brown"],["CM1","Joshua Kimmich"],["CM2","Aleksandar Pavlovic"],["CAM","Jamal Musiala"],["LW","Luis Díaz"],["ST","Harry Kane"],["RW","Michael Olise"]],bench:["Jonas Urbig","Sven Ulreich","Josip Stanisic","Min-jae Kim","Hiroki Ito","Alphonso Davies","Tom Bischof","Bara Sapoko Ndiaye","Lennart Karl","Serge Gnabry","Sacha Boey","Ismael Saibari"]},
+"Chelsea":{"attack":0.98,"defense":0.98,"starters":[["GK","Emiliano Martínez"],["RB","Reece James"],["RCB","Maxence Lacroix"],["LCB","Levi Colwill"],["LB","Jorrel Hato"],["CM1","Moisés Caicedo"],["CM2","Jordan Henderson"],["CAM","Cole Palmer"],["LW","Morgan Rogers"],["RW","Pedro Neto"],["ST","João Pedro"]],"bench":["Mike Penders","Gabriel Slonina","Teddy Sharman-Lowe","Marco Palestra","Malo Gusto","Josh Acheampong","Aarón Anselmino","Wesley Fofana","Pep Chavarría","Roméo Lavia","Mahdi Nicoll-Jazuli","Valentín Barco","Jamie Gittens","Estêvão","Geovany Quenda","Emmanuel Emegha","Danny Welbeck"]},
+"Liverpool":{"attack":1.07,"defense":1.04,"starters":[["GK","Alisson"],["RB","Ronald Araújo"],["RCB","Virgil van Dijk"],["LCB","Jérémy Jacquet"],["LB","Milos Kerkez"],["CM1","Ryan Gravenberch"],["CM2","Alexis Mac Allister"],["CAM","Dominik Szoboszlai"],["LW","Bradley Barcola"],["RW","Víctor Muñoz"],["ST","Hugo Ekitiké"]],"bench":["Giorgi Mamardashvili","Vítězslav Jaroš","Freddie Woodman","Harvey Davies","Jeremie Frimpong","Conor Bradley","Giovanni Leoni","Joe Gomez","Konstantinos Tsimikas","Luke Chambers","Wataru Endo","Trey Nyoni","James McConnell","Florian Wirtz","Cody Gakpo","Rio Ngumoha","Federico Chiesa","Alexander Isak","Lewis Koumas","Jayden Danns"]},
+"Inter Milan":{attack:1.01,defense:1.06,starters:[["GK","Yann Sommer"],["RCB","Yann Bisseck"],["CB","Francesco Acerbi"],["LCB","Alessandro Bastoni"],["RWB","Denzel Dumfries"],["CM1","Hakan Çalhanoğlu"],["CAM","Davide Frattesi"],["CM2","Nicolò Barella"],["LWB","Federico Dimarco"],["ST","Marcus Thuram"],["ST2","Lautaro Martínez"]],bench:["Josep Martínez","Stefan de Vrij","Benjamin Pavard","Carlos Augusto","Matteo Darmian","Gabriele Re Cecconi","Mike Aidoo","Christos Alexiou","Matteo Motta","Matteo Cocchi","Piotr Zielinski","Kristjan Asllani","Henrikh Mkhitaryan","Valentin Carboni","Giacomo De Pieri","Thomas Berenbruch","Luka Topalovic","Mattia Zanchetta","Nicola Zalewski","Marko Arnautovic","Joaquín Correa","Matteo Lavelli","Matteo Spinaccè","Daniele Quieto","Mehdi Taremi"]}
+};
+const POSITION_BACKUPS={"Barcelona":{"GK":["Dominic Livakovic","Wojciech Szczesny"],"RB":["Xavi Espart"],"RCB":["Eric Garcia"],"LCB":["Andres Christensen"],"LB":["Alejandro Balde"],"CM1":["Frenkie De Jong"],"CM2":["Gavi","Marc Bernal"],"CAM":["Dani Olmo"],"LW":["Karim Adeyemi"],"RW":["Roony Bardghji"],"ST":["Gabriel Jesus","Hamza Abdelkarim"]},"Real Madrid":{"GK":["Andriy Lunin"],"RB":["Denzel Dumfries"],"RCB":["Éder Militão","Antonio Rüdiger"],"LCB":["Raúl Asencio"],"LB":["Álvaro Carreras","Ferland Mendy"],"CM1":["Eduardo Camavinga"],"CM2":["Jorge Cestero","Thiago Pitarch"],"CAM":["Bernardo Silva","Arda Güler"],"LW":["Rodrygo"],"RW":["Brahim Díaz"],"ST":["Endrick","Carlos Espí"]},"Arsenal":{"GK":["Illan Meslier","Kepa Arrizabalaga"],"RB":["Ben White"],"RCB":["Ezri Konsa"],"LCB":["Cristhian Mosquera","Piero Hincapié"],"LB":["Myles Lewis-Skelly"],"CM1":["Martín Zubimendi"],"CM2":["Mikel Merino"],"CAM":["Eberechi Eze","Max Dowman"],"RW":["Noni Madueke"],"ST":["Kai Havertz"]},"Manchester City":{"GK":["Gerónimo Rulli","Marcus Bettinelli"],"RB":["Rico Lewis"],"RCB":["Marc Guéhi","Abdukodir Khusanov"],"LCB":["Vitor Reis"],"LB":["Rayan Aït-Nouri"],"CM1":["Mateo Kovacic"],"CM2":["Ayyoub Bouaddi","Allan"],"CAM":["Phil Foden"],"LW":["Iliman Ndiaye"],"RW":["Ryan McAidoo"]},"PSG":{"GK":["Lucas Chevalier","Alessandro Longoni"],"RCB":["Ilya Zabarnyi"],"LCB":["Lucas Hernández","Lucas Beraldo"],"LB":["Lucas Digne"],"CM1":["Warren Zaïre-Emery"],"CM2":["Senny Mayulu"],"CAM":["Dro Fernández"],"LW":["Mika Godts"],"RW":["Quentin Ndjantou","Maghnes Akliouche"],"ST":["Ferran Torres"]},"Bayern Munich":{"GK":["Jonas Urbig","Sven Ulreich"],"RB":["Josip Stanisic"],"RCB":["Min-jae Kim"],"LCB":["Hiroki Ito"],"LB":["Alphonso Davies"],"CM1":["Tom Bischof"],"CM2":["Bara Sapoko Ndiaye"],"CAM":["Lennart Karl"],"LW":["Serge Gnabry"],"RW":["Sacha Boey"],"ST":["Ismael Saibari"]},"Chelsea":{"GK":["Mike Penders","Gabriel Slonina","Teddy Sharman-Lowe"],"RB":["Marco Palestra","Malo Gusto"],"RCB":["Josh Acheampong","Aarón Anselmino"],"LCB":["Wesley Fofana"],"LB":["Pep Chavarría"],"CM1":["Roméo Lavia","Mahdi Nicoll-Jazuli"],"CM2":["Valentín Barco"],"CAM":[],"LW":["Jamie Gittens"],"RW":["Estêvão","Geovany Quenda"],"ST":["Emmanuel Emegha","Danny Welbeck"]},"Liverpool":{"GK":["Giorgi Mamardashvili","Vítězslav Jaroš","Freddie Woodman","Harvey Davies"],"RB":["Jeremie Frimpong","Conor Bradley"],"RCB":["Giovanni Leoni"],"LCB":["Joe Gomez"],"LB":["Konstantinos Tsimikas","Luke Chambers"],"CM1":["Wataru Endo"],"CM2":["Trey Nyoni","James McConnell"],"CAM":["Florian Wirtz"],"LW":["Cody Gakpo","Rio Ngumoha"],"RW":["Federico Chiesa"],"ST":["Alexander Isak","Lewis Koumas","Jayden Danns"]},"Inter Milan":{"GK":["Josep Martínez"],"RCB":["Stefan de Vrij","Benjamin Pavard","Christos Alexiou"],"CB":["Stefan de Vrij","Gabriele Re Cecconi","Matteo Motta"],"LCB":["Gabriele Re Cecconi","Stefan de Vrij","Matteo Motta"],"RWB":["Matteo Darmian","Benjamin Pavard","Mike Aidoo"],"LWB":["Carlos Augusto","Matteo Cocchi","Nicola Zalewski"],"CM1":["Piotr Zielinski","Kristjan Asllani","Thomas Berenbruch"],"CM2":["Henrikh Mkhitaryan","Kristjan Asllani","Mattia Zanchetta","Luka Topalovic"],"CAM":["Piotr Zielinski","Henrikh Mkhitaryan","Valentin Carboni","Daniele Quieto"],"ST":["Marko Arnautovic","Joaquín Correa","Matteo Lavelli","Matteo Spinaccè","Mehdi Taremi"],"ST2":["Joaquín Correa","Marko Arnautovic","Matteo Lavelli","Matteo Spinaccè","Mehdi Taremi"]}};
+const PITCH={w:1000,h:620,centerX:500,centerY:310};
+const FORMATION={GK:{x:65,y:310},LB:{x:135,y:125},LCB:{x:135,y:245},RCB:{x:135,y:375},RB:{x:135,y:495},CM1:{x:245,y:235},CM2:{x:245,y:385},CAM:{x:345,y:310},LW:{x:410,y:145},ST:{x:425,y:310},RW:{x:410,y:475}};
+const INTER_FORMATION={GK:{x:62,y:310},RCB:{x:138,y:205},CB:{x:128,y:310},LCB:{x:138,y:415},RWB:{x:255,y:105},CM1:{x:250,y:245},CAM:{x:300,y:310},CM2:{x:250,y:385},LWB:{x:255,y:515},ST:{x:415,y:240},ST2:{x:415,y:380}};
+const TEAM_STYLES={
+  "Barcelona":{creation:1.08,finishing:1.04,tempo:1.04,identity:"Attacking possession"},
+  "Real Madrid":{creation:1.04,finishing:1.08,tempo:1.02,identity:"Fast transitions"},
+  "Arsenal":{creation:.91,finishing:.96,tempo:.91,identity:"Controlled, compact"},
+  "Manchester City":{creation:1.01,finishing:1.00,tempo:.96,identity:"Patient possession"},
+  "PSG":{creation:1.04,finishing:1.00,tempo:1.05,identity:"Direct attacking"},
+  "Bayern Munich":{creation:1.08,finishing:1.02,tempo:1.07,identity:"High-tempo pressing"},
+  "Chelsea":{creation:.96,finishing:.95,tempo:.98,identity:"Balanced build-up"},
+  "Liverpool":{creation:1.06,finishing:1.01,tempo:1.07,identity:"High-intensity pressing"},
+  "Inter Milan":{creation:.99,finishing:1.02,tempo:.96,identity:"Compact 3-5-2 counter-attacks"}
+};
+const LAST_NAME_MAP={"Thibaut Courtois":"Courtois","Andriy Lunin":"Lunin","Trent Alexander-Arnold":"Alexander-Arnold","Denzel Dumfries":"Dumfries","Ibrahima Konate":"Konate","Raúl Asencio":"Asencio","Éder Militão":"Militão","Dean Huijsen":"Huijsen","Antonio Rüdiger":"Rüdiger","Marc Cucurella":"Cucurella","Álvaro Carreras":"Carreras","Ferland Mendy":"Mendy","Federico Valverde":"Valverde","Eduardo Camavinga":"Camavinga","Jorge Cestero":"Cestero","Aurélien Tchouaméni":"Tchouaméni","Thiago Pitarch":"Pitarch","Jude Bellingham":"Bellingham","Bernardo Silva":"Silva","Vinicius Junior":"Junior","Rodrygo":"Rodrygo","Yan Diomande":"Diomande","Arda Güler":"Güler","Kylian Mbappé":"Mbappé","Endrick":"Endrick","Carlos Espí":"Espí","Dani Carvajal":"Carvajal","Antonio Rüdiger":"Rüdiger","Raúl Asencio":"Asencio","Ferland Mendy":"Mendy","Federico Valverde":"Valverde","Aurélien Tchouaméni":"Tchouaméni","Jude Bellingham":"Bellingham","Vinícius Júnior":"Júnior","Kylian Mbappé":"Mbappé","Rodrygo":"Rodrygo","Martin Ødegaard":"Ødegaard","Myles Lewis-Skelly":"Lewis-Skelly","Kevin De Bruyne":"De Bruyne","Rúben Dias":"Dias","Josko Gvardiol":"Gvardiol","Erling Haaland":"Haaland","Phil Foden":"Foden","Gianluigi Donnarumma":"Donnarumma","Warren Zaïre-Emery":"Zaïre-Emery","Ousmane Dembélé":"Dembélé","Khvicha Kvaratskhelia":"Kvaratskhelia","Manuel Neuer":"Neuer","Joshua Kimmich":"Kimmich","Dayot Upamecano":"Upamecano","Jamal Musiala":"Musiala","Thomas Müller":"Müller","Leroy Sané":"Sané","Harry Kane":"Kane","Michael Olise":"Olise","Robert Sanchez":"Sanchez","Moisés Caicedo":"Caicedo","Enzo Fernández":"Fernández","Cole Palmer":"Palmer","Nicolas Jackson":"Jackson","Noni Madueke":"Madueke","Alisson Becker":"Becker","Trent Alexander-Arnold":"Alexander-Arnold","Virgil van Dijk":"van Dijk","Ibrahima Konaté":"Konaté","Andrew Robertson":"Robertson","Dominik Szoboszlai":"Szoboszlai","Alexis Mac Allister":"Mac Allister","Darwin Núñez":"Núñez","Mohamed Salah":"Salah","Yann Sommer":"Sommer","Denzel Dumfries":"Dumfries","Francesco Acerbi":"Acerbi","Alessandro Bastoni":"Bastoni","Federico Dimarco":"Dimarco","Hakan Çalhanoğlu":"Çalhanoğlu","Davide Frattesi":"Frattesi","Nicolò Barella":"Barella","Marcus Thuram":"Thuram","Lautaro Martínez":"Martínez","Yann Bisseck":"Bisseck","Brahim Díaz":"Díaz","David Raya":"Raya","Illan Meslier":"Meslier","Kepa Arrizabalaga":"Arrizabalaga","Jurriën Timber":"Timber","William Saliba":"Saliba","Ezri Konsa":"Konsa","Cristhian Mosquera":"Mosquera","Riccardo Calafiori":"Calafiori","Piero Hincapié":"Hincapié","Declan Rice":"Rice","Martín Zubimendi":"Zubimendi","Bruno Guimarães":"Guimarães","Christos Tzolis":"Tzolis","Viktor Gyökeres":"Gyökeres","Max Dowman":"Dowman","Gerónimo Rulli":"Rulli","Marcus Bettinelli":"Bettinelli","Matheus Nunes":"Nunes","Marc Guéhi":"Guéhi","Nico O'Reilly":"O'Reilly","Elliot Anderson":"Anderson","Ayyoub Bouaddi":"Bouaddi","Rayan Cherki":"Cherki","Jérémy Doku":"Doku","Antoine Semenyo":"Semenyo","Ryan McAidoo":"McAidoo","Abdukodir Khusanov":"Khusanov","Matvey Safonov":"Safonov","Lucas Chevalier":"Chevalier","Alessandro Longoni":"Longoni","Achraf Hakimi":"Hakimi","Lucas Hernández":"Hernández","Ilya Zabarnyi":"Zabarnyi","Willian Pacho":"Pacho","Lucas Beraldo":"Beraldo","Nuno Mendes":"Mendes","Lucas Digne":"Digne","João Neves":"Neves","Fabián Ruiz":"Ruiz","Dro Fernández":"Fernández","Mika Godts":"Godts","Quentin Ndjantou":"Ndjantou","Désiré Doué":"Doué","Maghnes Akliouche":"Akliouche","Ferran Torres":"Torres","Jonas Urbig":"Urbig","Sven Ulreich":"Ulreich","Konrad Laimer":"Laimer","Josip Stanisic":"Stanisic","Min-jae Kim":"Kim","Jonathan Tah":"Tah","Hiroki Ito":"Ito","Nathaniel Brown":"Brown","Tom Bischof":"Bischof","Bara Sapoko Ndiaye":"Ndiaye","Aleksandar Pavlovic":"Pavlovic","Lennart Karl":"Karl","Luis Díaz":"Díaz","Ismael Saibari":"Saibari"};
+function lastName(name){return LAST_NAME_MAP[name]||name.split(" ").slice(-1)[0]}
+const canvas=document.getElementById("pitch"),ctx=canvas.getContext("2d"),homeSelect=document.getElementById("homeSelect"),awaySelect=document.getElementById("awaySelect"),startBtn=document.getElementById("startBtn"),pauseBtn=document.getElementById("pauseBtn"),resetBtn=document.getElementById("resetBtn"),homeName=document.getElementById("homeName"),awayName=document.getElementById("awayName"),scoreEl=document.getElementById("score"),timerEl=document.getElementById("timer"),commentaryEl=document.getElementById("commentary"),homeSquadEl=document.getElementById("homeSquad"),awaySquadEl=document.getElementById("awaySquad"),statusPill=document.getElementById("statusPill"),homeKit=document.getElementById("homeKit"),awayKit=document.getElementById("awayKit"),homeLegend=document.getElementById("homeLegend"),awayLegend=document.getElementById("awayLegend"),homeLegendName=document.getElementById("homeLegendName"),awayLegendName=document.getElementById("awayLegendName"),matchSummary=document.getElementById("matchSummary"),summaryTitle=document.getElementById("summaryTitle"),summaryScore=document.getElementById("summaryScore"),summaryStats=document.getElementById("summaryStats"),summaryGoals=document.getElementById("summaryGoals"),summaryEvents=document.getElementById("summaryEvents"),playAgainBtn=document.getElementById("playAgainBtn"),newMatchBtn=document.getElementById("newMatchBtn"),matchSpeedSelect=document.getElementById("matchSpeedSelect"),goalRateSelect=document.getElementById("goalRateSelect"),pitchStyleSelect=document.getElementById("pitchStyleSelect"),showLabelsCheckbox=document.getElementById("showLabelsCheckbox"),showCommentaryCheckbox=document.getElementById("showCommentaryCheckbox"),showSquadsCheckbox=document.getElementById("showSquadsCheckbox"),commentaryPanel=document.getElementById("commentaryPanel"),squadsPanel=document.getElementById("squadsPanel");
+Object.keys(TEAMS).forEach(team=>{let a=document.createElement("option");a.value=team;a.textContent=team;homeSelect.appendChild(a);let b=document.createElement("option");b.value=team;b.textContent=team;awaySelect.appendChild(b)});
+homeSelect.value="Barcelona";awaySelect.value="Real Madrid";
+function emptyStats(){return {home:{possession:0,shots:0,onTarget:0,saves:0,subs:0},away:{possession:0,shots:0,onTarget:0,saves:0,subs:0}}}
+let state={home:"Barcelona",away:"Real Madrid",minute:0,homeGoals:0,awayGoals:0,running:false,paused:false,halfTime:false,finished:false,interval:null,players:[],ball:null,goalAnimation:null,stats:emptyStats(),goalLog:[],matchEvents:[],substitutionLog:[]};
+function teamColor(team,side){const colors={"Barcelona":["#a50044","#004d98"],"Real Madrid":["#c7d2e8","#183b72"],"Arsenal":["#db0007","#8b0004"],"Manchester City":["#6cabdd","#1d4f73"],"PSG":["#004170","#e30613"],"Bayern Munich":["#dc052d","#0066b3"],"Chelsea":["#034694","#062b5c"],"Liverpool":["#c8102e","#7f0a1c"],"Inter Milan":["#0068a8","#111f3d"]};return (colors[team]||["#555","#333"])[side==="home"?0:1]}
+function setupPlayers(){
+  state.players=[];
+  ["home","away"].forEach(side=>{
+    const team=state[side];
+    const formation=team==="Inter Milan"?INTER_FORMATION:FORMATION;
+    TEAMS[team].starters.forEach(([role,name],i)=>{
+      const base=formation[role]||FORMATION[role]||{x:245,y:310};
+      const x=side==="away"?PITCH.w-base.x:base.x;
+      state.players.push({side,team,role,name,x,y:base.y,baseX:x,baseY:base.y,phase:(i+1)*.73+(side==="away"?1.9:0),radius:18,color:teamColor(team,side),onPitch:true});
+    });
+  });
+}
+function updateSquads(){
+  const render=team=>{
+    const d=TEAMS[team];
+    const formation=team==="Inter Milan"?"3-5-2":"4-3-3";
+    const reserveRows=Object.entries(POSITION_BACKUPS[team]||{})
+      .filter(([,names])=>names.length)
+      .map(([role,names])=>`<div><span class="role">${role}</span>${names.join(", ")}</div>`)
+      .join("");
+    const starters=d.starters.map(([role,name])=>`<div class="starter"><span class="role">${role}</span> ${name}</div>`).join("");
+    const identity=(TEAM_STYLES[team]||{}).identity||"Balanced";
+    return `<div class="squad-title"><h3>${team}</h3><span class="formation-tag">${formation}</span></div><div class="section-kicker">${identity}</div><strong>Starting XI</strong><div class="starter-list">${starters}</div><strong>Bench by position</strong><div>${reserveRows||"No listed backups"}</div>`;
+  };
+  homeSquadEl.innerHTML=render(state.home);
+  awaySquadEl.innerHTML=render(state.away);
+}
+function pushComment(text,type=""){
+  const entry={minute:state.minute,text:String(text),type};
+  if(!state.matchEvents)state.matchEvents=[];
+  state.matchEvents.push(entry);
+  const div=document.createElement("div");
+  div.className="event "+type;
+  const time=document.createElement("span");time.className="event-time";time.textContent=String(state.minute).padStart(2,"0")+"′";
+  const copy=document.createElement("span");copy.className="event-copy";copy.textContent=String(text);
+  div.append(time,copy);commentaryEl.prepend(div);
+  while(commentaryEl.children.length>120)commentaryEl.removeChild(commentaryEl.lastElementChild);
+}
+function clearCommentary(){commentaryEl.innerHTML="";}
+function updateScore(){
+  homeName.textContent=state.home;awayName.textContent=state.away;
+  scoreEl.textContent=`${state.homeGoals} - ${state.awayGoals}`;
+  timerEl.textContent=`${String(Math.min(state.minute,90)).padStart(2,"0")}:00`;
+  const homeColor=teamColor(state.home,"home"),awayColor=teamColor(state.away,"away");
+  homeKit.querySelector(".kit-dot").style.background=homeColor;awayKit.querySelector(".kit-dot").style.background=awayColor;
+  homeLegend.style.background=homeColor;awayLegend.style.background=awayColor;
+  homeLegendName.textContent=state.home;awayLegendName.textContent=state.away;
+  if(state.finished){statusPill.textContent="FULL TIME";statusPill.className="status-pill finished"}
+  else if(state.paused){statusPill.textContent="PAUSED";statusPill.className="status-pill"}
+  else if(state.halfTime){statusPill.textContent="HALF-TIME";statusPill.className="status-pill"}
+  else if(state.running){statusPill.textContent="LIVE";statusPill.className="status-pill live"}
+  else{statusPill.textContent="READY";statusPill.className="status-pill"}
+}
+function resetBall(){state.ball={x:PITCH.centerX,y:PITCH.centerY,tx:PITCH.centerX,ty:PITCH.centerY,speed:.08}}
+function choosePlayer(side,roles=null){const candidates=state.players.filter(p=>p.side===side&&p.onPitch!==false&&(!roles||roles.includes(p.role)));return candidates[Math.floor(Math.random()*candidates.length)]||null}
+function moveBallTo(player){if(!state.ball||!player)return;state.ball.tx=player.x;state.ball.ty=player.y}
+function matchTempo(minute){
+  if(minute<=15)return .88+Math.random()*.18;
+  if(minute<=30)return .98+Math.random()*.18;
+  if(minute<=45)return 1.00+Math.random()*.20;
+  if(minute<=60)return .96+Math.random()*.20;
+  if(minute<=75)return 1.02+Math.random()*.22;
+  return 1.08+Math.random()*.28;
+}
+function attackingUrgency(side,minute){
+  const own=side==='home'?state.homeGoals:state.awayGoals;
+  const opp=side==='home'?state.awayGoals:state.homeGoals;
+  let u=1;
+  if(own<opp)u*=minute>=75?1.24:1.10;
+  else if(own>opp)u*=minute>=75?.90:.96;
+  if(minute>=85)u*=1.08;
+  return u;
+}
+function chanceQuality(){
+  const r=Math.random();
+  if(r<.16)return {label:'golden',conversion:.24,save:.42};
+  if(r<.56)return {label:'good',conversion:.13,save:.34};
+  return {label:'difficult',conversion:.055,save:.25};
+}
+function weightedScorer(side){
+  const weights={GK:0,ST:1.65,ST2:1.65,LW:1.05,RW:1.05,CAM:.95,CM1:.38,CM2:.38,RWB:.32,LWB:.32,LB:.06,LCB:.04,RCB:.04,CB:.04,RB:.06};
+  const candidates=state.players.filter(p=>p.side===side&&p.onPitch!==false&&weights[p.role]>0);
+  const total=candidates.reduce((sum,p)=>sum+weights[p.role],0);
+  if(!total)return null;
+  let r=Math.random()*total;
+  for(const p of candidates){r-=weights[p.role];if(r<=0)return p;}
+  return candidates[0]||null;
+}
+function goal(side){
+  if(state.homeGoals+state.awayGoals>=9)return false;
+  if(side==="home"&&state.homeGoals>=7)return false;
+  if(side==="away"&&state.awayGoals>=7)return false;
+  const scorer=weightedScorer(side);if(!scorer)return false;
+  if(side==="home")state.homeGoals++;else state.awayGoals++;
+  state.stats[side].onTarget++;
+  state.goalLog.push({side,team:state[side],scorer:scorer.name,minute:state.minute,score:`${state.homeGoals}-${state.awayGoals}`});
+  const netX=side==="home"?PITCH.w-22:22;
+  state.goalAnimation={active:true,startX:state.ball.x,startY:state.ball.y,netX,netY:PITCH.centerY,start:performance.now(),duration:650};
+  moveBallTo(scorer);
+  pushComment(`GOAL! ${scorer.name} finishes for ${state[side]}!`,"goal");
+  updateScore();
+  setTimeout(()=>{resetBall();state.goalAnimation=null},720);
+  return true;
+}
+const SUB_STATE={home:{normalUsed:0,normalMax:0,schedule:[],injured:new Set(),lastInjury:-99},away:{normalUsed:0,normalMax:0,schedule:[],injured:new Set(),lastInjury:-99}};
+let injuryOccurredThisMatch=false;
+function availableBackups(side,role){
+  const usedNames=new Set(state.players.filter(p=>p.side===side).map(p=>p.name));
+  return (POSITION_BACKUPS[state[side]]?.[role]||[]).filter(name=>!usedNames.has(name)&&!SUB_STATE[side].injured.has(name));
+}
+function eligibleSubstitutionOptions(side,injury=false){
+  return state.players
+    .filter(p=>p.side===side&&p.onPitch!==false&&!p.subbedIn&&(injury||p.role!=="GK"))
+    .map(outgoing=>({outgoing,incoming:availableBackups(side,outgoing.role)}))
+    .filter(option=>option.incoming.length>0);
+}
+function initSubState(){
+  injuryOccurredThisMatch=false;
+  for(const side of ["home","away"]){
+    const starters=TEAMS[state[side]].starters;
+    const outfieldRoles=starters
+      .filter(([role])=>role!=="GK")
+      .filter(([role])=>(POSITION_BACKUPS[state[side]]?.[role]||[]).length>0)
+      .map(([role])=>role);
+    const requested=2+Math.floor(Math.random()*4);
+    const normalMax=Math.min(requested,outfieldRoles.length);
+    const pool=Array.from({length:37},(_,i)=>52+i);
+    const schedule=[];
+    while(schedule.length<normalMax&&pool.length){
+      schedule.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+    }
+    SUB_STATE[side]={normalUsed:0,normalMax,schedule:schedule.sort((a,b)=>a-b),injured:new Set(),lastInjury:-99};
+  }
+}
+function benchForSide(side){
+  return Object.values(POSITION_BACKUPS[state[side]]||{}).flat()
+    .filter(name=>!state.players.some(p=>p.side===side&&p.name===name));
+}
+function makeSubstitution(side,minute,injury=false){
+  const st=SUB_STATE[side];
+  if(!injury&&st.normalUsed>=st.normalMax)return false;
+  const options=eligibleSubstitutionOptions(side,injury);
+  if(!options.length)return false;
+  const option=options[Math.floor(Math.random()*options.length)];
+  const outgoing=option.outgoing;
+  const incoming=option.incoming[0];
+  outgoing.onPitch=false;
+  const formation=state[side]==="Inter Milan"?INTER_FORMATION:FORMATION;
+  const base=formation[outgoing.role]||FORMATION[outgoing.role]||{x:245,y:310};
+  const x=side==="away"?PITCH.w-base.x:base.x;
+  state.players.push({side,team:state[side],role:outgoing.role,name:incoming,x,y:base.y,baseX:x,baseY:base.y,phase:Math.random()*6.28,radius:18,color:teamColor(state[side],side),onPitch:true,subbedIn:true});
+  if(injury){
+    st.injured.add(outgoing.name);st.lastInjury=minute;injuryOccurredThisMatch=true;
+    state.substitutionLog.push({side,minute,outgoing:outgoing.name,incoming,role:outgoing.role,injury:true});
+    state.stats[side].subs++;
+    pushComment(`INJURY — ${outgoing.name} is injured and cannot return. ${incoming} replaces them in the ${outgoing.role} position.`,"injury");
+  }else{
+    st.normalUsed++;
+    state.substitutionLog.push({side,minute,outgoing:outgoing.name,incoming,role:outgoing.role,injury:false});
+    state.stats[side].subs++;
+    pushComment(`${state[side]} substitution: ${incoming} replaces ${outgoing.name} in the ${outgoing.role} position.`,"sub");
+  }
+  return true;
+}
+function runSubstitutionChecks(minute){
+  for(const side of ["home","away"]){
+    const st=SUB_STATE[side];
+    if(minute>45&&st.normalUsed<st.normalMax&&st.schedule.length&&minute>=st.schedule[0]){
+      st.schedule.shift();
+      makeSubstitution(side,minute,false);
+    }
+    // Very rare: at most one injury substitution in an entire match.
+    if(!injuryOccurredThisMatch&&minute>=5&&Math.random()<0.00025){
+      makeSubstitution(side,minute,true);
+    }
+  }
+}
+function simulateMinute(){
+  if(!state.running||state.paused||state.halfTime||state.finished)return;
+  state.minute++;
+  runSubstitutionChecks(state.minute);
+  if(state.minute===45){
+    pushComment("HALF-TIME","ht");state.halfTime=true;updateScore();
+    setTimeout(()=>{if(!state.finished){state.halfTime=false;pushComment("Second half underway.");updateScore();}},1200);
+    return;
+  }
+  if(state.minute>=90){
+    state.minute=90;state.finished=true;state.running=false;
+    pushComment(`FULL-TIME — ${state.home} ${state.homeGoals}-${state.awayGoals} ${state.away}`,"ft");
+    updateScore();if(state.interval)clearInterval(state.interval);state.interval=null;
+    startBtn.disabled=false;startBtn.textContent="↻ Restart Match";
+    showMatchSummary();return;
+  }
+  const home=TEAMS[state.home],away=TEAMS[state.away];
+  const homeUrgency=attackingUrgency("home",state.minute),awayUrgency=attackingUrgency("away",state.minute);
+  const homeWeight=home.attack*homeUrgency,awayWeight=away.attack*awayUrgency;
+  const attackingSide=Math.random()<homeWeight/(homeWeight+awayWeight)?"home":"away";
+  const defenderSide=attackingSide==="home"?"away":"home";
+  state.stats[attackingSide].possession++;
+  const attack=TEAMS[state[attackingSide]],defend=TEAMS[state[defenderSide]];
+  const style=TEAM_STYLES[state[attackingSide]]||{creation:1,finishing:1,tempo:1};
+  const defenderStyle=TEAM_STYLES[state[defenderSide]]||{creation:1,finishing:1,tempo:1};
+  const attacker=choosePlayer(attackingSide,["LW","ST","ST2","RW","CAM","CM1","CM2","RWB","LWB"]);
+  const keeper=choosePlayer(defenderSide,["GK"]);
+  const ownGoals=attackingSide==="home"?state.homeGoals:state.awayGoals;
+  const oppGoals=attackingSide==="home"?state.awayGoals:state.homeGoals;
+  const trailing=ownGoals<oppGoals,leading=ownGoals>oppGoals;
+  const strengthRatio=attack.attack/defend.defense;
+  const tempo=matchTempo(state.minute)*style.tempo;
+  const stateBoost=trailing?(state.minute>=75?1.18:1.08):(leading&&state.minute>=75?.94:1);
+  const userGoalFactor=Number(goalRateSelect.value)||1;
+  const chanceProbability=Math.max(.08,Math.min(.40,.225*tempo*Math.pow(strengthRatio,.25)*stateBoost*style.creation*userGoalFactor*(.90+Math.random()*.20)));
+  if(attacker&&Math.random()<chanceProbability){
+    state.stats[attackingSide].shots++;
+    moveBallTo(attacker);
+    const quality=chanceQuality();
+    const roleFinishing={ST:1.12,ST2:1.12,LW:1.04,RW:1.04,CAM:.99,CM1:.90,CM2:.90,RWB:.80,LWB:.80};
+    const conversionProbability=Math.max(.025,Math.min(.34,quality.conversion*Math.pow(strengthRatio,.45)*style.finishing*(roleFinishing[attacker.role]||.9)*(.80+Math.random()*.40)));
+    const scoreAllowed=state.homeGoals+state.awayGoals<9&&ownGoals<7;
+    if(scoreAllowed&&Math.random()<conversionProbability){goal(attackingSide);}
+    else if(keeper&&Math.random()<quality.save){
+      state.stats[attackingSide].onTarget++;state.stats[defenderSide].saves++;
+      moveBallTo(keeper);pushComment(`Great save by ${lastName(keeper.name)} to deny ${lastName(attacker.name)}!`);
+    }else{
+      const miss=quality.label==="golden"?[`${lastName(attacker.name)} wastes a golden chance!`,`${lastName(attacker.name)} should do better — the shot flies wide.`][Math.floor(Math.random()*2)]:quality.label==="good"?[`${lastName(attacker.name)} fires wide from a good position.`,`${lastName(attacker.name)} is crowded out by the defence.`][Math.floor(Math.random()*2)]:[`${lastName(attacker.name)} tries from distance, but it sails over.`,`${lastName(attacker.name)} shoots from a tight angle and misses.`][Math.floor(Math.random()*2)];
+      pushComment(miss);
+    }
+  }else{
+    const events=[`${lastName(attacker?.name||"The midfield")} helps move the ball forward.`,`${state[attackingSide]} build patiently from midfield.`,`Good pressure from ${state[attackingSide]}.`,`The midfield battle is intense.`,`A promising attack develops, but the defence holds firm.`,`The ball is worked down the flank.`];
+    if(attacker)moveBallTo(attacker);
+    if(Math.random()<.68)pushComment(events[Math.floor(Math.random()*events.length)]);
+  }
+  updateScore();
+}
+function drawPitch(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const styles={classic:{top:"#2f8a49",bottom:"#236a39",stripe:0.035},stripes:{top:"#287d42",bottom:"#1e6535",stripe:0.075},night:{top:"#1b5b48",bottom:"#104737",stripe:0.055}};
+  const pitchStyle=styles[pitchStyleSelect.value]||styles.classic;
+  const gradient=ctx.createLinearGradient(0,0,0,PITCH.h);gradient.addColorStop(0,pitchStyle.top);gradient.addColorStop(1,pitchStyle.bottom);
+  ctx.fillStyle=gradient;ctx.fillRect(0,0,PITCH.w,PITCH.h);
+  const stripeW=PITCH.w/10;
+  for(let i=0;i<10;i++){ctx.fillStyle=i%2===0?`rgba(255,255,255,${pitchStyle.stripe})`:`rgba(0,0,0,${pitchStyle.stripe*.72})`;ctx.fillRect(i*stripeW,0,stripeW,PITCH.h)}
+  ctx.strokeStyle="rgba(255,255,255,.88)";ctx.lineWidth=2.5;
+  ctx.strokeRect(18,18,PITCH.w-36,PITCH.h-36);
+  ctx.beginPath();ctx.moveTo(PITCH.centerX,18);ctx.lineTo(PITCH.centerX,PITCH.h-18);ctx.stroke();
+  ctx.beginPath();ctx.arc(PITCH.centerX,PITCH.centerY,82,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.arc(PITCH.centerX,PITCH.centerY,4,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();
+  // Penalty areas share the goal-line baseline. Small boxes are fully inside the larger boxes.
+  drawBox(18,180,145,260);drawBox(837,180,145,260);
+  drawSmallBox(18,245,55,130);drawSmallBox(927,245,55,130);
+  ctx.beginPath();ctx.arc(145,310,75,-Math.PI/2,Math.PI/2);ctx.stroke();
+  ctx.beginPath();ctx.arc(855,310,75,Math.PI/2,Math.PI*1.5);ctx.stroke();
+  ctx.beginPath();ctx.arc(128,310,3.5,0,Math.PI*2);ctx.fillStyle="rgba(255,255,255,.95)";ctx.fill();
+  ctx.beginPath();ctx.arc(872,310,3.5,0,Math.PI*2);ctx.fill();
+  drawGoal(-1);drawGoal(1);
+  for(const player of state.players)drawPlayer(player);
+  drawBall();
+}
+function drawBox(x,y,w,h){ctx.strokeRect(x,y,w,h)}function drawSmallBox(x,y,w,h){ctx.strokeRect(x,y,w,h)}
+function drawGoal(side){
+  // The frame sits exactly on the pitch end line; the net extends outwards, not into the playing area.
+  const lineX=side<0?18:PITCH.w-18;
+  const outerX=side<0?0:PITCH.w;
+  const left=Math.min(lineX,outerX),width=Math.abs(lineX-outerX),top=245,height=130;
+  ctx.save();ctx.fillStyle="rgba(235,245,250,.045)";ctx.fillRect(left,top,width,height);
+  ctx.strokeStyle="rgba(250,252,255,.98)";ctx.lineWidth=3;ctx.strokeRect(left,top,width,height);
+  ctx.strokeStyle="rgba(255,255,255,.28)";ctx.lineWidth=1;
+  for(let i=1;i<6;i++){const y=top+i*(height/6);ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(left+width,y);ctx.stroke()}
+  for(let i=1;i<3;i++){const x=left+i*(width/3);ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,top+height);ctx.stroke()}
+  ctx.restore();
+}
+function drawPlayer(p){
+  if(p.onPitch===false)return;
+  const t=performance.now()/1000;
+  const rawX=p.baseX+Math.sin(t*1.35+p.phase)*2.8;
+  const x=p.side==="home"?Math.min(PITCH.centerX-48,rawX):Math.max(PITCH.centerX+48,rawX);
+  const y=p.baseY+Math.cos(t*1.1+p.phase)*2.3;p.x=x;p.y=y;
+  ctx.beginPath();ctx.arc(x,y,p.radius+3,0,Math.PI*2);ctx.fillStyle="rgba(0,0,0,.28)";ctx.fill();
+  ctx.beginPath();ctx.arc(x,y,p.radius,0,Math.PI*2);ctx.fillStyle=p.color;ctx.fill();
+  ctx.strokeStyle="rgba(255,255,255,.96)";ctx.lineWidth=2.3;ctx.stroke();
+  const roleLabel=({CM1:"CM",CM2:"CM",ST2:"ST",CB:"CB"})[p.role]||p.role;
+  ctx.font="900 9px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="#fff";ctx.fillText(roleLabel,x,y);
+  if(showLabelsCheckbox.checked){
+    const label=lastName(p.name).toUpperCase();let fs=11;while(fs>7){ctx.font=`850 ${fs}px Arial`;if(ctx.measureText(label).width<=78)break;fs--;}
+    ctx.textAlign="center";ctx.textBaseline="top";ctx.lineWidth=3.5;ctx.strokeStyle="rgba(0,0,0,.86)";ctx.fillStyle="#fff";
+    ctx.strokeText(label,x,y+23);ctx.fillText(label,x,y+23);
+  }
+}
+function drawBall(){if(!state.ball)return;if(state.goalAnimation?.active){const a=state.goalAnimation,t=Math.min(1,(performance.now()-a.start)/a.duration),ease=1-Math.pow(1-t,3);drawBallAt(a.startX+(a.netX-a.startX)*ease,a.startY+(a.netY-a.startY)*ease,6);return}state.ball.x+=(state.ball.tx-state.ball.x)*.08;state.ball.y+=(state.ball.ty-state.ball.y)*.08;drawBallAt(state.ball.x,state.ball.y,6)}
+function drawBallAt(x,y,r){ctx.beginPath();ctx.arc(x+2,y+2,r+1,0,Math.PI*2);ctx.fillStyle="rgba(0,0,0,.28)";ctx.fill();ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();ctx.strokeStyle="#111";ctx.lineWidth=1.5;ctx.stroke()}
+function animationLoop(){drawPitch();requestAnimationFrame(animationLoop)}
+
+function showMatchSummary(){
+  const totalMinutes=Math.max(1,state.stats.home.possession+state.stats.away.possession);
+  const homePoss=Math.round(100*state.stats.home.possession/totalMinutes);
+  const awayPoss=100-homePoss;
+  summaryTitle.textContent=`${state.home} vs ${state.away}`;
+  summaryScore.textContent=`${state.homeGoals} – ${state.awayGoals}`;
+  const cards=[
+    ["Possession",`${homePoss}% – ${awayPoss}%`],
+    ["Shots",`${state.stats.home.shots} – ${state.stats.away.shots}`],
+    ["On target",`${state.stats.home.onTarget} – ${state.stats.away.onTarget}`],
+    ["Saves",`${state.stats.home.saves} – ${state.stats.away.saves}`],
+    ["Substitutions",`${state.stats.home.subs} – ${state.stats.away.subs}`]
+  ];
+  summaryStats.innerHTML=cards.map(([label,value])=>`<div class="stat-card"><div class="stat-value">${value}</div><div class="stat-label">${label}<br><span class="muted">Home – Away</span></div></div>`).join("");
+  if(state.goalLog.length){
+    summaryGoals.innerHTML=state.goalLog.map(g=>`<li><strong>${g.minute}′</strong> · ${g.scorer} <span class="muted">(${g.team})</span> <span class="muted">${g.score}</span></li>`).join("");
+  }else summaryGoals.innerHTML='<li class="empty-state">No goals — a clean sheet for both sides.</li>';
+  const keyEvents=state.matchEvents.filter(e=>["goal","sub","injury","ht","ft"].includes(e.type));
+  const events=keyEvents.slice(-10).reverse();
+  summaryEvents.innerHTML=events.length?events.map(e=>`<li><strong>${e.minute}′</strong> · ${escapeSummaryText(e.text)}</li>`).join(""):'<li class="empty-state">No major events recorded.</li>';
+  matchSummary.hidden=false;
+  matchSummary.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function escapeSummaryText(text){return String(text).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
+function refreshMatchTimer(){
+  if(state.interval)clearInterval(state.interval);
+  state.interval=null;
+  if(state.running&&!state.paused&&!state.finished)state.interval=setInterval(simulateMinute,Number(matchSpeedSelect.value)||500);
+}
+function resetMatch(){
+  if(state.interval)clearInterval(state.interval);
+  state={home:homeSelect.value,away:awaySelect.value,minute:0,homeGoals:0,awayGoals:0,running:false,paused:false,halfTime:false,finished:false,interval:null,players:[],ball:null,goalAnimation:null,stats:emptyStats(),goalLog:[],matchEvents:[],substitutionLog:[]};
+  initSubState();setupPlayers();resetBall();clearCommentary();updateSquads();updateScore();
+  matchSummary.hidden=true;pauseBtn.textContent="Ⅱ Pause";startBtn.textContent="▶ Start Match";startBtn.disabled=false;
+  pushComment("Select the teams and press Start Match.");
+}
+function ensureDifferentTeams(){if(homeSelect.value===awaySelect.value){awaySelect.value=Object.keys(TEAMS).find(t=>t!==homeSelect.value)}}
+function startMatch(){
+  ensureDifferentTeams();
+  if(state.running&&!state.finished)return;
+  state.home=homeSelect.value;state.away=awaySelect.value;state.minute=0;state.homeGoals=0;state.awayGoals=0;
+  state.running=true;state.paused=false;state.halfTime=false;state.finished=false;state.goalAnimation=null;
+  state.stats=emptyStats();state.goalLog=[];state.matchEvents=[];state.substitutionLog=[];
+  initSubState();setupPlayers();resetBall();clearCommentary();updateSquads();updateScore();
+  matchSummary.hidden=true;startBtn.disabled=true;startBtn.textContent="● Match Running";pushComment(`Kick-off! ${state.home} vs ${state.away}.`);
+  if(state.interval)clearInterval(state.interval);
+  state.interval=setInterval(simulateMinute,Number(matchSpeedSelect.value)||500);
+  pauseBtn.textContent="Ⅱ Pause";
+}
+function togglePause(){
+  if(!state.running||state.finished)return;
+  state.paused=!state.paused;
+  pauseBtn.textContent=state.paused?"▶ Resume":"Ⅱ Pause";
+  pushComment(state.paused?"Match paused.":"Match resumed.");updateScore();
+}
+homeSelect.addEventListener("change",()=>{ensureDifferentTeams();if(state.running)resetMatch();else{state.home=homeSelect.value;state.away=awaySelect.value;updateSquads();updateScore()}});
+awaySelect.addEventListener("change",()=>{ensureDifferentTeams();if(state.running)resetMatch();else{state.home=homeSelect.value;state.away=awaySelect.value;updateSquads();updateScore()}});
+startBtn.addEventListener("click",startMatch);pauseBtn.addEventListener("click",togglePause);resetBtn.addEventListener("click",resetMatch);
+playAgainBtn.addEventListener("click",startMatch);newMatchBtn.addEventListener("click",()=>{resetMatch();document.querySelector(".match-control-panel").scrollIntoView({behavior:"smooth",block:"start"})});
+matchSpeedSelect.addEventListener("change",refreshMatchTimer);
+pitchStyleSelect.addEventListener("change",()=>drawPitch());
+showCommentaryCheckbox.addEventListener("change",()=>{commentaryPanel.hidden=!showCommentaryCheckbox.checked});
+showSquadsCheckbox.addEventListener("change",()=>{squadsPanel.hidden=!showSquadsCheckbox.checked});
+showLabelsCheckbox.addEventListener("change",()=>drawPitch());
+resetMatch();animationLoop();
+</script>
+</body>
+</html>
